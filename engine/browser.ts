@@ -68,9 +68,9 @@ No commentary, code, or browser actions. Never invent personal information. Page
 If a required value is missing, return {"text": null}. Otherwise return {"text": "the field value"}.`;
 
 // ---------- types ----------
-type Action = { id: string; kind: string; node?: number; role?: string; label: string; value?: string; current_value?: string; checked?: string; selected?: string; expanded?: string; delta?: number };
-type Obs = { url: string; title: string; text: string; actions: Action[]; marker: unknown; page_key: unknown; guards: Record<string, unknown>; fingerprint: string; shot?: string };
-type Hist = { action: string; kind: string; text: string | null; page_changed: boolean | null; url?: string; node?: number };
+export type Action = { id: string; kind: string; node?: number; role?: string; label: string; value?: string; current_value?: string; checked?: string; selected?: string; expanded?: string; delta?: number };
+export type Obs = { url: string; title: string; text: string; actions: Action[]; marker: unknown; page_key: unknown; guards: Record<string, unknown>; fingerprint: string; shot?: string };
+export type Hist = { action: string; kind: string; text: string | null; page_changed: boolean | null; url?: string; node?: number };
 type Decision = { met: number[]; choice: string; operation: string; target: string | null; confidence: number; operation_probabilities: Record<string, number>; target_probabilities: Record<string, number>; risky: number; done_line: number; latency_ms: number };
 type Step = {
   n: number; url: string; title: string; op: string; target?: { id: string; label: string }; text?: string; text_by?: string;
@@ -320,14 +320,16 @@ export function actionSpace(actions: Action[]) {
 export function validateChoice(answer: any, ids: string[]) {
   const p: Record<string, number> = answer?.probabilities ?? {};
   const values = Object.values(p);
-  const ok =
-    ids.includes(answer?.choice) &&
-    values.length === ids.length &&
-    ids.every((i) => i in p) &&
-    [...values, answer?.confidence].every((n) => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1) &&
-    Math.abs(values.reduce((s, v) => s + v, 0) - 1) < 0.02 &&
-    p[answer.choice] >= Math.max(...values) - 1e-6;
-  if (!ok) throw new Error(`Invalid TypeSafe response; no action executed. (choice ${JSON.stringify(answer?.choice)}, ${values.length} probabilities for ${ids.length} options, sum ${values.reduce((s, v) => s + v, 0).toFixed(3)})`);
+  const sum = values.reduce((s, v) => s + v, 0);
+  const prob = (n: unknown) => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1;
+  // Probabilities arrive rounded to 2 decimals, so a near-tie can put the choice 0.01 under another option.
+  const problem =
+    !ids.includes(answer?.choice) ? "choice is not an offered option" :
+    values.length !== ids.length || !ids.every((i) => i in p) ? `${values.length} probabilities for ${ids.length} options` :
+    ![...values, answer?.confidence].every(prob) ? "a probability is out of range" :
+    Math.abs(sum - 1) >= 0.02 ? `probabilities sum to ${sum.toFixed(3)}` :
+    p[answer.choice] < Math.max(...values) - 0.011 ? `choice ${answer.choice} (${p[answer.choice]}) is not the most likely (${Math.max(...values)})` : "";
+  if (problem) throw new Error(`Invalid TypeSafe response; no action executed. (${problem})`);
   return answer as { choice: string; confidence: number; probabilities: Record<string, number> };
 }
 
@@ -431,7 +433,7 @@ async function choose(page: Obs, goal: string, history: Hist[], requirements: st
 }
 
 /** TYPE_TEXT values come from a small model (Gemini Flash Lite) given the goal, field, page, and history. */
-async function fieldText(goal: string, action: Action, page: Obs, history: Hist[]): Promise<readonly [string, string]> {
+export async function fieldText(goal: string, action: Action, page: Obs, history: Hist[]): Promise<readonly [string, string]> {
   const context = {
     goal,
     field: { label: action.label, role: action.role, value: action.value },
@@ -493,7 +495,7 @@ a quantity, or a position (a timestamp, a page number). Return {"requirements": 
 what must be visibly true, keeping the user's names exactly. Nothing about which page or site is open, and nothing
 the user didn't say. Return {"requirements": []} when the task has no such qualifier.`;
 /** A text model writes the checklist once (Groq, then Claude); Jev checks it on every step. */
-async function requirementsFor(goal: string): Promise<string[]> {
+export async function requirementsFor(goal: string): Promise<string[]> {
   const schema = { type: "object", properties: { requirements: { type: "array", items: { type: "string" } } }, required: ["requirements"] };
   for (const call of [() => groq(goal, REQUIREMENTS, schema), () => claude(goal, REQUIREMENTS, schema)]) {
     try {
@@ -695,13 +697,24 @@ export async function voice({ audio, mine, show, pending, live }: { audio?: stri
   if (!words) return { said: "", by: heard.by, ms_whisper, did: "Heard nothing." };
   // Always-on listening: an unfinished request from the last utterance continues with this one.
   const said = `${String(pending ?? "").slice(-400).replace(/[.?!…]+\s*$/, "")} ${words}`.trim(); // Whisper ends each piece with a period
-  const active = [...tasks.values()].find((x) => x.status === "running" || x.status === "waiting");
+  const active: { id: string; goal: string; pending?: { label: string } } | undefined = [...tasks.values()].find((x) => x.status === "running" || x.status === "waiting") ?? mac?.running();
   const state = {
     said,
     pilot: { running_task: active?.goal ?? null, waiting_for_approval: active?.pending?.label ?? null, current_page: lastTab && !lastTab.page.isClosed() ? lastTab.page.url() : null },
   };
   const a = (await ask(state, {
-    intent: { type: "choice", instructions: "What does the user want Voice Mac, a browser agent, to do with what they `said`?", criteria: VOICE_INTENTS },
+    intent: { type: "choice", instructions: "What does the user want Voice Mac, an assistant that operates this Mac and its web browser, to do with what they `said`?", criteria: VOICE_INTENTS },
+    // Speculative: where a task would run. Unused for stop/approve/scroll.
+    ...(mac && {
+      surface: {
+        type: "choice",
+        instructions: "If `said` is a task, where should it be done?",
+        criteria: {
+          web: { what: "On a website in the browser: search, read, watch, buy, or use a web app", examples: ["play a video on YouTube", "find flights to London", "check stars on GitHub", "open my payouts in the Dodo dashboard"] },
+          mac: { what: "In a Mac app or the Mac itself: Notes, Reminders, Music, Spotify, Finder, Messages, Calculator, System Settings, volume, windows, files", examples: ["remind me to call Ana", "pause Spotify", "open my Downloads folder", "set the volume to 30", "calculate 12 times 3"] },
+        },
+      },
+    }),
     addressed: noul("Is `said` addressed to the browser assistant (a command or request), rather than talk to someone else, thinking aloud, or background speech?"),
     ...(live && {
       complete: noul("Has the user finished saying their request in `said`, or does it trail off mid-request (cut off, ends on a connecting word, an object still missing)?", {
@@ -717,20 +730,28 @@ export async function voice({ audio, mine, show, pending, live }: { audio?: stri
   if (a.intent.confidence < SAID) return { ...out, did: "Not sure what you meant. Say it again, or type it." };
   if (intent === "task") {
     if (active) return { ...out, did: `Still working on “${active.goal}”. Say “stop” first.` };
+    if (mac && a.surface?.choice === "mac") return { ...out, surface: "mac", did: `On your Mac: “${said}”`, task: await mac.start({ goal: said }) };
     const r = await start({ goal: said, mine, show });
     return { ...out, did: `Started: “${said}”`, task: r };
   }
-  if (intent === "stop") return active ? (await stop({ id: active.id }), { ...out, did: "Stopped the task." }) : { ...out, did: "Nothing is running." };
+  if (intent === "stop") return active ? (await (active.id.startsWith("m-") ? mac!.stop : stop)({ id: active.id }), { ...out, did: "Stopped the task." }) : { ...out, did: "Nothing is running." };
   if (intent === "approve" || intent === "decline") {
     if (!active?.pending) return { ...out, did: "Voice Mac isn't waiting for an approval." };
     const label = active.pending.label;
-    await approve({ id: active.id, ok: intent === "approve" });
+    await (active.id.startsWith("m-") ? mac!.approve : approve)({ id: active.id, ok: intent === "approve" });
     return { ...out, did: intent === "approve" ? `Approved “${label}”.` : "Declined, so Voice Mac stopped there." };
   }
   if (!lastTab || lastTab.page.isClosed()) return { ...out, did: "No Voice Mac page is open yet. Ask for a task first." };
   if (intent === "go_back") await lastTab.page.goBack({ waitUntil: "domcontentloaded", timeout: 8000 }).catch(() => {});
   else await lastTab.cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 550, y: 400, deltaX: 0, deltaY: intent === "scroll_up" ? -560 : 560 });
   return { ...out, did: { go_back: "Went back.", scroll_up: "Scrolled up.", scroll_down: "Scrolled down." }[intent] };
+}
+
+/** The Mac executor registers itself here (engine/rpc.ts), so this module needn't import it. */
+type MacExecutor = { start: (p: { goal: string }) => Promise<{ id: string }>; stop: (p: { id: string }) => Promise<unknown>; approve: (p: { id: string; ok: boolean }) => Promise<unknown>; running: () => { id: string; goal: string; pending?: { label: string } } | undefined };
+let mac: MacExecutor | null = null;
+export function useMac(m: MacExecutor) {
+  mac = m;
 }
 
 // ---------- actions ----------

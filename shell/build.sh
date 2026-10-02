@@ -6,6 +6,7 @@ swift build -c release
 APP="dist/Voice Mac.app"
 rm -rf "$APP" && mkdir -p "$APP/Contents/MacOS"
 cp .build/release/VoiceMac "$APP/Contents/MacOS/VoiceMac"
+cp .build/release/axd "$APP/Contents/MacOS/axd" # accessibility helper; runs under the app's Accessibility grant
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

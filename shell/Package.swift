@@ -6,5 +6,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(name: "VoiceMac", path: "Sources/VoiceMac", linkerSettings: [.linkedFramework("Carbon")]),
+        // Accessibility helper the engine keeps running: reads windows and acts in-process, ~ms per call.
+        .executableTarget(name: "axd", path: "Sources/axd"),
     ]
 )

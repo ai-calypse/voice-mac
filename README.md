@@ -15,7 +15,11 @@ Plan: `~/.claude/plans/happy-snuggling-ocean.md` (milestones 1–6).
   - `lib/jev.ts` — Jev client, throttle, cost tracing. `lib/llm.ts` — text writers (Groq → local
     Ollama → Gemini → Claude) and speech (local whisper.cpp → Groq Whisper).
 - `cli/bench.ts` — 13 live browser tasks, each answer checked in code.
-- `shell/` — Swift menu-bar app (milestone 2).
+- `engine/mac.ts` — Mac apps: quick commands first (`engine/quick.ts`, curated AppleScript ported from
+  aloud), else the step loop over accessibility reads from `axd`: one Jev request per step (operation, a
+  target per operation, menu path, risk, requirements), act, read again.
+- `shell/` — Swift menu-bar app, plus `axd`, the accessibility helper (in-process AX reads and actions,
+  adapted from Computah, MIT). Cua Driver (`engine/lib/cua.ts`) stays available as a slower fallback.
 
 ## Run
 
@@ -45,3 +49,7 @@ Speech runs on this Mac with whisper.cpp (`brew install whisper-cpp`) and the la
 - Milestone 2 (Swift shell): `shell/build.sh` → `shell/dist/Voice Mac.app`. Hold ⌥Space to talk; a floating
   panel shows what was heard, Jev's routing, live steps, approvals and the answer. Menu: "Use my Brave".
   Test without a mic: `"shell/dist/Voice Mac.app/Contents/MacOS/VoiceMac" --utterance file.wav`.
+- Milestone 3 (Mac apps, in progress): one voice front door routes to web or Mac. Quick commands (open/quit
+  app, Music, Spotify, reminders, notes, messages, volume, window layout, Spotlight, folders, Shortcuts) route
+  in ~0.15 s and run in ~0.1–0.5 s. The step loop through axd: Calculator "12 × 3" in 2.8 s (was 21 s through
+  Cua Driver, ~1.1 s per click); actions take 3–35 ms. The app needs Accessibility permission for axd.

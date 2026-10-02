@@ -4,12 +4,18 @@
 import { createInterface } from "node:readline";
 import { UserError } from "./lib/jev.ts";
 import * as browser from "./browser.ts";
+import * as mac from "./mac.ts";
+
+browser.useMac(mac);
+// Mac task ids start with "m-"; the same task.* methods serve both executors.
+const either = (b: (p: any) => Promise<unknown>, m: (p: any) => Promise<unknown>) => (p: any) => (String(p?.id ?? "").startsWith("m-") ? m(p) : b(p));
 
 const METHODS: Record<string, (p: any) => Promise<unknown>> = {
   "task.start": browser.start,
-  "task.progress": browser.progress,
-  "task.approve": browser.approve,
-  "task.stop": browser.stop,
+  "mac.start": mac.start,
+  "task.progress": either(browser.progress, mac.progress),
+  "task.approve": either(browser.approve, mac.approve),
+  "task.stop": either(browser.stop, mac.stop),
   "task.history": browser.history,
   utterance: browser.voice, // {audio: base64 16 kHz WAV, live?, pending?, mine?}
   ping: async () => ({ ok: true }),
@@ -21,7 +27,7 @@ const send = (msg: unknown) => process.stdout.write(JSON.stringify(msg) + "\n");
 async function watch(id: string) {
   let from = 0;
   for (;;) {
-    const p: any = await browser.progress({ id, from }).catch(() => null);
+    const p: any = await (id.startsWith("m-") ? mac.progress : browser.progress)({ id, from }).catch(() => null);
     if (!p) return;
     if (p.steps.length || ["done", "stuck", "stopped", "error", "waiting"].includes(p.status)) send({ event: "task", id, ...p, live: undefined, steps: p.steps.map(({ shot, ...s }: any) => s) }); // screenshots stay in task.progress
     from += p.steps.length;
@@ -42,7 +48,7 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
   try {
     const result: any = await fn(req.params ?? {});
     send({ id: req.id, result });
-    const taskId = req.method === "task.start" ? result?.id : result?.task?.id;
+    const taskId = req.method === "task.start" || req.method === "mac.start" ? result?.id : result?.task?.id;
     if (taskId) watch(taskId);
   } catch (e) {
     send({ id: req.id, error: { message: String((e as Error).message ?? e).split("\n")[0], user: e instanceof UserError } });

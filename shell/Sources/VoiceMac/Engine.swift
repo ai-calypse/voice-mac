@@ -23,6 +23,7 @@ final class Engine {
         process.currentDirectoryURL = directory
         var env = ProcessInfo.processInfo.environment
         env["PATH"] = "/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "/usr/bin:/bin")
+        env["VOICE_MAC_AXD"] = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/axd").path
         process.environment = env
         process.standardInput = stdin
         process.standardOutput = stdout
