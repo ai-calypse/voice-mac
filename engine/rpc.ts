@@ -54,4 +54,6 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
     send({ id: req.id, error: { message: String((e as Error).message ?? e).split("\n")[0], user: e instanceof UserError } });
   }
 });
+// The app owns this process: when it quits (stdin closes), exit too, taking axd and the browser with it.
+process.stdin.on("end", () => process.exit(0));
 send({ event: "ready", methods: Object.keys(METHODS) });

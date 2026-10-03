@@ -46,8 +46,11 @@ Speech runs on this Mac with whisper.cpp (`brew install whisper-cpp`) and the la
 ## Status
 
 - Milestone 1 (engine copy + RPC): browser bench 12/13 on the first run from this repo, median 3 s per task.
-- Milestone 2 (Swift shell): `shell/build.sh` → `shell/dist/Voice Mac.app`. Hold ⌥Space to talk; a floating
-  panel shows what was heard, Jev's routing, live steps, approvals and the answer. Menu: "Use my Brave".
+- Milestone 2 (Swift shell): `shell/build.sh` → `shell/dist/Voice Mac.app`, signed with your Apple Development
+  certificate (or `SIGN_IDENTITY`) so Accessibility/Microphone grants survive rebuilds. A black pill wraps the
+  notch: grey dot idle, red dot + live mic bars while you hold ⌥Space, spinner while working, green when done.
+  Click it (or open the app again) for the card: what was heard, Jev's routing, steps, Yes/No approvals, the
+  answer, "Use my Brave" and Stop.
   Test without a mic: `"shell/dist/Voice Mac.app/Contents/MacOS/VoiceMac" --utterance file.wav`.
 - Milestone 3 (Mac apps, in progress): one voice front door routes to web or Mac. Quick commands (open/quit
   app, Music, Spotify, reminders, notes, messages, volume, window layout, Spotlight, folders, Shortcuts) route

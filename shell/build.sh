@@ -22,5 +22,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>VoiceMacDir</key><string>$(cd .. && pwd)</string>
 </dict></plist>
 PLIST
-codesign --force --sign - "$APP"
+# A stable identity keeps macOS permissions (Accessibility, Microphone) across rebuilds; ad-hoc signing
+# changes identity every build. Uses SIGN_IDENTITY, else the first "Apple Development" certificate.
+IDENTITY="${SIGN_IDENTITY:-$(security find-identity -p codesigning -v 2>/dev/null | awk -F'"' '/Apple Development/ {print $2; exit}')}"
+IDENTITY="${IDENTITY:--}"
+perl -e 'alarm 60; exec @ARGV' codesign --force --sign "$IDENTITY" "$APP/Contents/MacOS/axd"
+perl -e 'alarm 60; exec @ARGV' codesign --force --sign "$IDENTITY" "$APP"
+echo "Signed with: $IDENTITY"
 echo "Built $APP"

@@ -8,6 +8,8 @@ final class Recorder {
     private let target = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 16_000, channels: 1, interleaved: true)!
     private let lock = NSLock()
     private(set) var recording = false
+    /// Microphone loudness (RMS, ~0–0.3) for the notch's level bars.
+    var onLevel: ((Double) -> Void)?
 
     func start() throws {
         guard !recording else { return }
@@ -35,6 +37,11 @@ final class Recorder {
     }
 
     private func append(_ buffer: AVAudioPCMBuffer) {
+        if let ch = buffer.floatChannelData?[0], buffer.frameLength > 0 {
+            var sum: Float = 0
+            for i in 0..<Int(buffer.frameLength) { sum += ch[i] * ch[i] }
+            onLevel?(Double(sqrt(sum / Float(buffer.frameLength))))
+        }
         guard let converter else { return }
         let capacity = AVAudioFrameCount(Double(buffer.frameLength) * target.sampleRate / buffer.format.sampleRate) + 32
         guard let out = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: capacity) else { return }
