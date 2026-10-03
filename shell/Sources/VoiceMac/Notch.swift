@@ -30,7 +30,7 @@ final class Notch {
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = false
-        window.level = NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue + 3)
+        window.level = .popUpMenu // above the menu bar and its items
         window.isFloatingPanel = true
         window.hidesOnDeactivate = false
         window.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
@@ -68,31 +68,36 @@ struct NotchView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 6) {
             // The strip that wraps the notch: status on the left ear, mic level or activity on the right ear.
             HStack(spacing: 0) {
-                HStack(spacing: 6) {
-                    Circle().fill(tint).frame(width: 8, height: 8)
-                        .shadow(color: tint.opacity(model.listening ? 0.9 : 0), radius: 4)
-                }
-                .frame(width: 60, alignment: .center)
+                Circle().fill(tint).frame(width: 8, height: 8)
+                    .shadow(color: tint.opacity(model.listening ? 0.9 : 0), radius: 4)
+                    .frame(width: 60)
                 Spacer(minLength: notch.width)
                 Group {
                     if model.listening { LevelBars(level: model.level) }
                     else if model.phase == .working { ProgressView().controlSize(.mini).tint(.white) }
                     else { Image(systemName: "waveform").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.6)) }
                 }
-                .frame(width: 60, alignment: .center)
+                .frame(width: 60)
             }
-            .frame(height: notch.height)
+            .frame(width: notch.width + 120, height: notch.height)
+            .background(Color.black)
+            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 12, bottomTrailingRadius: 12))
             .contentShape(Rectangle())
             .onTapGesture { model.expanded.toggle() }
 
-            if model.expanded { Details(model: model).padding(.horizontal, 18).padding(.vertical, 12) }
+            // The card hangs below the menu bar (menu titles draw above every app window, so it can't sit beside the notch).
+            if model.expanded {
+                Details(model: model)
+                    .padding(.horizontal, 18).padding(.vertical, 14)
+                    .frame(width: max(notch.width + 200, 440), alignment: .leading)
+                    .background(Color.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 22))
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
-        .frame(width: model.expanded ? max(notch.width + 200, 440) : notch.width + 120, alignment: .top)
-        .background(Color.black)
-        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: model.expanded ? 22 : 12, bottomTrailingRadius: model.expanded ? 22 : 12))
         .foregroundStyle(.white)
         .animation(.spring(response: 0.3, dampingFraction: 0.85), value: model.expanded)
     }

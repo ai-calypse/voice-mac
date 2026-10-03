@@ -80,6 +80,12 @@ final class Model: ObservableObject {
         do {
             let engine = try Engine(directory: engineDir)
             engine.onEvent = { [weak self] in self?.handle(event: $0) }
+            engine.onExit = { [weak self] code in
+                guard let self else { return }
+                self.ready = false
+                self.error = "The engine stopped (exit \(code)). Check the repo's .env and run `npm install`, then reopen Voice Mac."
+                self.showPanel()
+            }
             self.engine = engine
         } catch {
             self.error = "Couldn't start the engine: \(error.localizedDescription)"

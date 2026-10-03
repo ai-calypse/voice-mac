@@ -20,6 +20,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSUIElement</key><true/>
   <key>NSMicrophoneUsageDescription</key><string>Voice Mac listens while you hold Option-Space so you can tell your Mac what to do.</string>
   <key>VoiceMacDir</key><string>$(cd .. && pwd)</string>
+  <key>VoiceMacNode</key><string>$(command -v node)</string>
 </dict></plist>
 PLIST
 # A stable identity keeps macOS permissions (Accessibility, Microphone) across rebuilds; ad-hoc signing
