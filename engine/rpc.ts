@@ -1,6 +1,8 @@
 // The engine's only interface: newline-delimited JSON-RPC over stdio, so the Swift shell (or any
 // process) can drive it. Requests: {"id", "method", "params"}; replies: {"id", "result"} or
 // {"id", "error"}. Running tasks also push {"event": "task", ...} lines until they finish.
+import { appendFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { UserError } from "./lib/jev.ts";
 import * as browser from "./browser.ts";
@@ -23,6 +25,11 @@ const METHODS: Record<string, (p: any) => Promise<unknown>> = {
 
 const send = (msg: unknown) => process.stdout.write(JSON.stringify(msg) + "\n");
 
+// A local record of every request and how it ended (no audio, no screenshots), so a test can be reviewed later.
+const LOG = join(import.meta.dirname, "..", "data", "log.jsonl");
+const log = (entry: Record<string, unknown>) =>
+  mkdir(join(LOG, ".."), { recursive: true }).then(() => appendFile(LOG, JSON.stringify({ at: new Date().toISOString(), ...entry }) + "\n")).catch(() => {});
+
 /** Push a task's new steps and status until it ends, so the shell never has to poll. */
 async function watch(id: string) {
   let from = 0;
@@ -31,7 +38,12 @@ async function watch(id: string) {
     if (!p) return;
     if (p.steps.length || ["done", "stuck", "stopped", "error", "waiting"].includes(p.status)) send({ event: "task", id, ...p, live: undefined, steps: p.steps.map(({ shot, ...s }: any) => s) }); // screenshots stay in task.progress
     from += p.steps.length;
-    if (["done", "stuck", "stopped", "error"].includes(p.status)) return;
+    if (["done", "stuck", "stopped", "error"].includes(p.status)) {
+      const all: any = await (id.startsWith("m-") ? mac.progress : browser.progress)({ id, from: 0 }).catch(() => null);
+      log({ kind: "task", id, goal: all?.goal, app: all?.app, status: all?.status, error: all?.error, answer: all?.answer, elapsed_ms: all?.elapsed_ms,
+        steps: all?.steps?.map((s: any) => ({ op: s.op, target: s.target?.label, text: s.text, note: s.note, url: s.url })) });
+      return;
+    }
     await new Promise((r) => setTimeout(r, 300));
   }
 }
@@ -48,10 +60,16 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
   try {
     const result: any = await fn(req.params ?? {});
     send({ id: req.id, result });
+    if (req.method === "utterance") {
+      const { said, by, ms_whisper, intent, confidence, addressed, surface, did, task } = result;
+      log({ kind: "utterance", said, by, ms_whisper, intent, confidence, addressed, surface, did, task: task?.id });
+    } else if (req.method !== "task.progress") log({ kind: "call", method: req.method, params: req.params, result });
     const taskId = req.method === "task.start" || req.method === "mac.start" ? result?.id : result?.task?.id;
     if (taskId) watch(taskId);
   } catch (e) {
-    send({ id: req.id, error: { message: String((e as Error).message ?? e).split("\n")[0], user: e instanceof UserError } });
+    const message = String((e as Error).message ?? e).split("\n")[0];
+    send({ id: req.id, error: { message, user: e instanceof UserError } });
+    log({ kind: "error", method: req.method, message });
   }
 });
 // The app owns this process: when it quits (stdin closes), exit too, taking axd and the browser with it.
