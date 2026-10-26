@@ -55,7 +55,10 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
   } catch {
     return send({ id: null, error: { message: "Not JSON." } });
   }
-  const fn = METHODS[String(req.method)];
+  if (!req || typeof req !== "object" || Array.isArray(req) || typeof req.method !== "string") {
+    return send({ id: null, error: { message: "Expected an object with a method string." } });
+  }
+  const fn = Object.hasOwn(METHODS, req.method) ? METHODS[req.method] : undefined;
   if (!fn) return send({ id: req.id, error: { message: `Unknown method ${req.method}.` } });
   try {
     const result: any = await fn(req.params ?? {});

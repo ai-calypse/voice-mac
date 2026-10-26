@@ -1,0 +1,13 @@
+{"version": 2, "width": 108, "height": 30, "timestamp": 1792991848, "title": "Voice Mac: real offline checks and engine transport; no live AI task", "env": {"TERM": "xterm-256color"}}
+[1.3e-05, "o", "$ npm run typecheck\r\n"]
+[0.369439, "o", "\r\n> typecheck\r\n> tsc\r\n\r\n"]
+[0.369452, "o", "$ npm test\r\n"]
+[1.112271, "o", "\r\n> test\r\n> npm run check && node --test tests/*.test.mjs\r\n\r\n\r\n> check\r\n> node engine/browser.check.ts\r\n\r\n\u2714 stdio transport survives malformed requests and dispatches only registered methods (233.223042ms)\r\n\u2139 tests 1\r\n\u2139 suites 0\r\n\u2139 pass 1\r\n\u2139 fail 0\r\n\u2139 cancelled 0\r\n\u2139 skipped 0\r\n\u2139 todo 0\r\n\u2139 duration_ms 266.622334\r\n"]
+[1.112288, "o", "$ node engine/rpc.ts\r\n"]
+[1.346127, "o", "{\"event\":\"ready\",\"methods\":[\"task.start\",\"mac.start\",\"task.progress\",\"task.approve\",\"task.stop\",\"task.history\",\"utterance\",\"ping\"]}\r\n"]
+[1.346162, "o", "> {\"id\":1,\"method\":\"ping\"}\r\n"]
+[1.346532, "o", "{\"id\":1,\"result\":{\"ok\":true}}\r\n"]
+[1.346535, "o", "> malformed input\r\n"]
+[1.346684, "o", "{\"id\":null,\"error\":{\"message\":\"Not JSON.\"}}\r\n"]
+[1.346695, "o", "> {\"id\":2,\"method\":\"ping\"}\r\n"]
+[1.347001, "o", "{\"id\":2,\"result\":{\"ok\":true}}\r\n"]

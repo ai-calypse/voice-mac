@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/ai-calypse/voice-mac/security/advisories/new
+    about: Please keep exploit details and secrets out of public issues.

@@ -6,7 +6,8 @@
     "engine": "node --env-file=.env engine/rpc.ts",
     "typecheck": "tsc",
     "check": "node engine/browser.check.ts",
-    "bench": "node --env-file=.env cli/bench.ts"
+    "bench": "node --env-file=.env cli/bench.ts",
+    "test": "npm run check && node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.287",
@@ -16,5 +17,9 @@
   "devDependencies": {
     "@types/node": "^26.6.4",
     "typescript": "^7.0.2"
+  },
+  "description": "A macOS voice automation prototype with a Swift menu-bar shell and typed TypeScript action engine.",
+  "engines": {
+    "node": ">=24.0.0"
   }
 }
