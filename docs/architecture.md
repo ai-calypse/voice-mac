@@ -1,5 +1,8 @@
 # Voice Mac architecture
 
+For system-design reasoning, alternatives, consistency boundaries, and change triggers, start with the
+[architecture and tradeoff guide](../ARCHITECTURE.md). This document retains the detailed implementation/evidence reference.
+
 ## A small process boundary
 
 The Swift shell owns microphone capture, the Option-Space shortcut, and the notch/card UI. It launches Node

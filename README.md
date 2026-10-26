@@ -10,7 +10,7 @@ actions, read the result, and expose progress and approvals over a local stdio p
 [![CI](https://github.com/ai-calypse/voice-mac/actions/workflows/ci.yml/badge.svg)](https://github.com/ai-calypse/voice-mac/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/ai-calypse/voice-mac/actions/workflows/codeql.yml/badge.svg)](https://github.com/ai-calypse/voice-mac/actions/workflows/codeql.yml)
 
-[Architecture and protocol](docs/architecture.md) · [Demo](docs/demo.md) · [Contributing](CONTRIBUTING.md)
+[Architecture & tradeoffs](ARCHITECTURE.md) · [Protocol](docs/architecture.md) · [Demo](docs/demo.md) · [Contributing](CONTRIBUTING.md)
 
 </div>
 

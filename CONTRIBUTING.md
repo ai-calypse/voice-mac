@@ -1,6 +1,6 @@
 # Contributing
 
-Start with the [README](README.md) for scope and setup. Report a reproducible bug or discuss a proposed feature
+Start with the [README](README.md) for scope and setup and [architecture tradeoffs](ARCHITECTURE.md) for design context. Report a reproducible bug or discuss a proposed feature
 before making a large change. Small, focused pull requests are easiest to review.
 
 ## Development loop
@@ -13,7 +13,7 @@ npm run typecheck
 npm test
 # On macOS:
 SIGN_IDENTITY=- ./shell/build.sh
-python3 .github/scripts/check-docs.py README.md CONTRIBUTING.md SECURITY.md docs/maintaining.md docs/demo.md
+python3 .github/scripts/check-docs.py ARCHITECTURE.md README.md CONTRIBUTING.md SECURITY.md docs/maintaining.md docs/demo.md
 ```
 
 Add a regression test for behavior changes. Documentation-only edits do not need artificial tests.

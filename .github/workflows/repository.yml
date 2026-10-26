@@ -24,6 +24,6 @@ jobs:
       - name: Validate workflows
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -color
       - name: Check documentation links
-        run: python3 .github/scripts/check-docs.py README.md CONTRIBUTING.md SECURITY.md docs/maintaining.md docs/demo.md
+        run: python3 .github/scripts/check-docs.py ARCHITECTURE.md README.md CONTRIBUTING.md SECURITY.md docs/maintaining.md docs/demo.md
       - name: Check whitespace
         run: git diff --check
